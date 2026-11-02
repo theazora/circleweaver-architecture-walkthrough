@@ -119,9 +119,14 @@
     header.hero p.updated { font-size: 0.72rem; }
     header.hero .logo {
       display: block;
-      height: 42px;
+      height: 72px;
       width: auto;
       margin: 0 0 0.85rem;
+    }
+    h3 {
+      margin: 1.15rem 0 0.45rem;
+      font-size: 1.02rem;
+      color: var(--heading);
     }
     h1 {
       margin: 0 0 0.65rem;
@@ -347,7 +352,7 @@
         <p class="author">Thea B.</p>
         <p class="updated">Updated Nov 2, 2026</p>
       </div>
-      <img class="logo" src="./weaver-logo.png" alt="Weaver" />
+      <img class="logo" src="./circle-weaver-logo.png" alt="Circle Weaver" />
       <h1>Architecture walkthrough</h1>
       <p class="lede">
         How the new React interface talks to the Java app on S07, what is already on the branch,
@@ -365,6 +370,8 @@
         <li><a href="#ship">How it ships</a></li>
         <li><a href="#both">Both stay on S07</a></li>
         <li><a href="#questions">Questions I have come across</a></li>
+        <li><a href="#expect">Questions to be ready for</a></li>
+        <li><a href="#ask-team">Questions I'd ask the team</a></li>
       </ol>
     </nav>
 
@@ -610,6 +617,96 @@ flowchart LR
         </tbody>
       </table>
       <p>These are the ones I have run into so far. Anyone else's questions are welcome.</p>
+    </section>
+
+    <section id="expect">
+      <h2>8. Questions to be ready for</h2>
+      <p>These are the ones I expect people to ask once we get into the details.</p>
+
+      <h3>The pieces</h3>
+      <table>
+        <thead><tr><th>Question</th><th>Answer</th></tr></thead>
+        <tbody>
+          <tr><td>What’s the difference between React and Spring?</td><td>React handles what users see and interact with. Spring handles backend requests, application logic, and access to stored information.</td></tr>
+          <tr><td>What exactly does Tomcat do?</td><td>Tomcat is the web server and servlet container that runs the deployed Java application and serves its static files.</td></tr>
+          <tr><td>Why do we need Maven?</td><td>Maven manages Java dependencies and builds the application into a deployable WAR file.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Backend and data</h3>
+      <table>
+        <thead><tr><th>Question</th><th>Answer</th></tr></thead>
+        <tbody>
+          <tr><td>Where are meetings actually stored?</td><td>In workspace files under <code>/opt/weaver_sites/</code>, in <code>.cog/ProjInfo.xml</code>. Spring reads that file and builds the JSON when the browser asks for it.</td></tr>
+          <tr><td>Does MongoDB store our meetings?</td><td>MongoDB supports mail. Meeting and workspace records stay in the file-based site library.</td></tr>
+          <tr><td>Do we need to build a new API for React?</td><td>Not for the first hookup. The backend already has endpoints for listing, reading, and updating meetings. The work is connecting those to React.</td></tr>
+          <tr><td>What happens when someone creates or updates a meeting?</td><td>React sends the request to the backend. Spring runs it through the meeting controller, which updates the workspace data.</td></tr>
+          <tr><td>Are all the React screens connected to real data?</td><td>Not yet. Most still use demonstration data in the browser. Connecting meetings is one of the first integration milestones.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Authentication and deployment</h3>
+      <table>
+        <thead><tr><th>Question</th><th>Answer</th></tr></thead>
+        <tbody>
+          <tr><td>Why can’t we just run everything through localhost?</td><td>The login session uses a cookie for the S07 domain. The Vite dev server on localhost is a different origin, so it does not get that session. The plan is to serve React under the existing Weaver app.</td></tr>
+          <tr><td>Are we creating a new login system?</td><td>We are reusing SSOFI and the existing Tomcat session.</td></tr>
+          <tr><td>Will the old interface stop working?</td><td>The JSP application stays. The React application will be served separately under <code>/weaver/app/</code>.</td></tr>
+          <tr><td>How will we deploy the new frontend?</td><td>The React app builds into static files, and those go in the deployed WAR. Changes go through GitHub and the usual deploy, rather than a hand upload.</td></tr>
+          <tr><td>Can we deploy React without rebuilding the Java application?</td><td>The current plan puts the React build in the WAR. Deploying it on its own would be a separate setup.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>GitHub and testing</h3>
+      <table>
+        <thead><tr><th>Question</th><th>Answer</th></tr></thead>
+        <tbody>
+          <tr><td>What is GitHub Actions actually doing?</td><td>It runs checks for us. On a pull request it can lint, build the React app, and later run automated tests. That workflow is the plan. It is not in the repo yet.</td></tr>
+          <tr><td>Does GitHub Actions automatically fix errors?</td><td>It reports whether checks pass or fail. We still investigate and fix the problems.</td></tr>
+          <tr><td>What is Vitest?</td><td>A test runner that fits Vite. We can use it for React components, application logic, and data transformations such as the meeting-list mapper.</td></tr>
+          <tr><td>Why do we need pull requests if everyone has access to the repository?</td><td>A pull request is where we review the change, talk through the decision, catch mistakes, and leave a record before it merges to the main branch.</td></tr>
+          <tr><td>Can someone contribute without knowing React?</td><td>Yes. Reviewing changes, testing a branch, reporting bugs, writing docs, QA, and pull request review are all part of the work.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Functionality and UX</h3>
+      <table>
+        <thead><tr><th>Question</th><th>Answer</th></tr></thead>
+        <tbody>
+          <tr><td>What happens to the Discussions section?</td><td>It is still a placeholder. I am planning an initial prototype on a separate feature branch so the team and UX can review the direction.</td></tr>
+          <tr><td>What about meetings that stay running?</td><td>We need to agree on the behavior with UX and look at what the backend already does. An explicit End Meeting action is one option. We should settle the workflow before building it.</td></tr>
+          <tr><td>What about Weaver Scribe and AI transcription?</td><td>The current screen is a demonstration. Transcription and summarization are not hooked up. Privacy, cost, and what stakeholders need come before picking a provider.</td></tr>
+          <tr><td>What happens to features that are not in the current UX designs?</td><td>We should compare the new designs with the existing app so we do not drop something that matters, especially permissions, discussions, collaboration, and meeting workflows.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="ask-team">
+      <h2>9. Questions I'd ask the team</h2>
+      <p>These turn the walkthrough into a conversation.</p>
+      <table>
+        <thead><tr><th>Ask</th><th>Why it matters</th></tr></thead>
+        <tbody>
+          <tr><td>What functionality from the original application should we prioritize preserving?</td><td>Prevents feature gaps.</td></tr>
+          <tr><td>Who wants to help with automated testing?</td><td>Spreads the development work.</td></tr>
+          <tr><td>What should the Discussions experience include?</td><td>Gets UX and development aligned.</td></tr>
+          <tr><td>What should happen when a meeting reaches its scheduled end time?</td><td>Clarifies the meeting lifecycle.</td></tr>
+          <tr><td>What should be our first fully integrated feature?</td><td>Gives us a concrete milestone.</td></tr>
+          <tr><td>What documentation would help the next team most?</td><td>Makes the handoff easier.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Five I want to be especially ready for</h3>
+      <table>
+        <thead><tr><th>Question</th><th>Answer</th></tr></thead>
+        <tbody>
+          <tr><td>Is the React application actually connected to the backend yet?</td><td>Not fully. Authentication and meeting data are the first priorities.</td></tr>
+          <tr><td>Can we break the existing application by working on React?</td><td>The work is in <code>spring3</code> and feature branches. We are not replacing the JSP application. Deploy still goes through the usual process.</td></tr>
+          <tr><td>What is the biggest technical blocker?</td><td>Getting the React frontend and the existing backend talking reliably, especially the session cookie and how the build is deployed.</td></tr>
+          <tr><td>What can the rest of the team contribute?</td><td>Frontend components, UX implementation, testing, documentation, GitHub reviews, automation, and QA.</td></tr>
+          <tr><td>What can we realistically finish before handoff?</td><td>A React foundation with real authentication and meeting data, a documented workflow, testing in place, and a clear list of what is still left.</td></tr>
+        </tbody>
+      </table>
     </section>
 
     <footer>
