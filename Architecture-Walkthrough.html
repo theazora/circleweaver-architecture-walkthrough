@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Circle Weaver architecture walkthrough</title>
+  <script src="./mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: "neutral",
+      securityLevel: "loose",
+      flowchart: { curve: "basis", htmlLabels: true }
+    });
+  </script>
+  <style>
+    :root {
+      --bg: #eef0f8;
+      --card: #ffffff;
+      --ink: #1c1917;
+      --muted: #57534e;
+      --line: #e4e2ef;
+      --accent: #5b3cc4;
+      --accent-soft: #ede9fe;
+      --heading: #3b2a8a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse at top left, rgba(124, 58, 237, 0.28) 0%, transparent 48%),
+        radial-gradient(ellipse at top right, rgba(37, 99, 235, 0.26) 0%, transparent 46%),
+        radial-gradient(ellipse at bottom, rgba(99, 102, 241, 0.12) 0%, transparent 55%),
+        linear-gradient(160deg, #ebe4ff 0%, #e8f0ff 45%, #eef2ff 100%);
+      line-height: 1.55;
+      min-height: 100vh;
+    }
+    .wrap {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 2rem 1.25rem 4rem;
+    }
+    .skip-link {
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      padding: 0.5rem 1rem;
+      background: var(--heading);
+      color: white;
+      z-index: 100;
+    }
+    .skip-link:focus {
+      left: 0.5rem;
+      top: 0.5rem;
+    }
+    nav.page-tabs {
+      background: var(--card);
+      border-bottom: 1px solid var(--line);
+      padding: 0 1.25rem;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: 0 2px 12px rgba(28, 25, 23, 0.04);
+    }
+    nav.page-tabs ul {
+      list-style: none;
+      margin: 0 auto;
+      padding: 0;
+      max-width: 880px;
+      display: flex;
+      gap: 0.25rem;
+      flex-wrap: wrap;
+    }
+    nav.page-tabs a {
+      display: block;
+      padding: 0.85rem 0.9rem;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.88rem;
+      font-weight: 600;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -1px;
+    }
+    nav.page-tabs a:hover {
+      color: var(--accent);
+      background: var(--accent-soft);
+    }
+    nav.page-tabs a:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+    nav.page-tabs a[aria-current="page"] {
+      color: var(--heading);
+      border-bottom-color: var(--accent);
+    }
+    header.hero {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 8px 30px rgba(28, 25, 23, 0.06);
+    }
+    header.hero .meta-top {
+      display: flex;
+      align-items: baseline;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin: 0 0 0.85rem;
+    }
+    header.hero p.author,
+    header.hero p.updated {
+      margin: 0;
+      color: var(--muted);
+    }
+    header.hero p.author { font-size: 0.78rem; letter-spacing: 0.02em; }
+    header.hero p.updated { font-size: 0.72rem; }
+    header.hero .logo {
+      display: block;
+      height: 42px;
+      width: auto;
+      margin: 0 0 0.85rem;
+    }
+    h1 {
+      margin: 0 0 0.65rem;
+      font-size: clamp(1.35rem, 3vw, 1.7rem);
+      line-height: 1.2;
+      color: var(--heading);
+      font-weight: 650;
+    }
+    .lede {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1.05rem;
+    }
+    nav.toc {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 2rem;
+    }
+    nav.toc strong { display: block; margin-bottom: 0.5rem; }
+    nav.toc ol { margin: 0; padding-left: 1.25rem; }
+    nav.toc a { color: var(--accent); text-decoration: none; }
+    nav.toc a:hover { text-decoration: underline; }
+    section {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 1.5rem 1.5rem 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    h2 {
+      margin: 0 0 0.75rem;
+      font-size: 1.3rem;
+      color: var(--heading);
+      border-bottom: 2px solid var(--accent-soft);
+      padding-bottom: 0.4rem;
+    }
+    h2 .time {
+      display: block;
+      margin-top: 0.2rem;
+      font-size: 0.75rem;
+      font-weight: 650;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    p { margin: 0 0 0.75rem; }
+    .muted { color: var(--muted); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+      margin: 0.6rem 0 0.85rem;
+    }
+    th, td {
+      border: 1px solid var(--line);
+      padding: 0.5rem 0.6rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #f3f0ff;
+      color: var(--heading);
+      font-weight: 650;
+    }
+    .diagram {
+      background: #fafaf9;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 1rem;
+      overflow-x: auto;
+      margin: 0.85rem 0;
+    }
+    .diagram-lg { padding: 1.25rem 1rem 1.5rem; }
+    .diagram-label {
+      margin: 0 0 0.65rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--heading);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .mermaid {
+      display: flex;
+      justify-content: center;
+      width: 100%;
+    }
+    .diagram-lg .mermaid svg {
+      width: auto !important;
+      max-width: 100%;
+      height: auto !important;
+      min-height: 0;
+    }
+    .diagram-compact {
+      max-width: 36rem;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .diagram-compact .mermaid .nodeLabel,
+    .diagram-compact .mermaid .edgeLabel,
+    .diagram-compact .mermaid foreignObject,
+    .diagram-compact .mermaid foreignObject div,
+    .diagram-compact .mermaid foreignObject span,
+    .diagram-compact .mermaid foreignObject p {
+      font-size: 0.92rem !important;
+      line-height: 1.35 !important;
+      font-weight: 600 !important;
+    }
+    .diagram-steps {
+      max-width: 34rem;
+      margin-left: auto;
+      margin-right: auto;
+      padding: 0.85rem 0.9rem 1rem;
+    }
+    .diagram-steps .mermaid svg {
+      width: auto !important;
+      max-width: 100%;
+      min-height: 0;
+    }
+    .diagram-steps .mermaid .nodeLabel,
+    .diagram-steps .mermaid foreignObject,
+    .diagram-steps .mermaid foreignObject div,
+    .diagram-steps .mermaid foreignObject span,
+    .diagram-steps .mermaid foreignObject p {
+      font-size: 0.86rem !important;
+      line-height: 1.3 !important;
+      font-weight: 600 !important;
+    }
+    .endpoint {
+      margin: 0.15rem 0 0.85rem;
+      padding: 0.85rem 1rem;
+      background: #1c1917;
+      color: #f5f5f4;
+      border-radius: 10px;
+      overflow-x: auto;
+      font-size: 1rem;
+      line-height: 1.45;
+    }
+    .endpoint code {
+      background: transparent;
+      color: inherit;
+      font-size: 1rem;
+      padding: 0;
+    }
+    .callout {
+      background: var(--accent-soft);
+      border-left: 4px solid var(--accent);
+      border-radius: 0 10px 10px 0;
+      padding: 0.8rem 1rem;
+      margin: 0.85rem 0;
+    }
+    .callout strong { color: var(--heading); }
+    ul.compact { margin: 0.4rem 0 0.75rem; padding-left: 1.2rem; }
+    ul.compact li { margin-bottom: 0.35rem; }
+    .tech-logo {
+      width: 1.45rem;
+      height: 1.45rem;
+      vertical-align: -0.32rem;
+      margin-right: 0.35rem;
+    }
+    a.docs {
+      margin-left: 0.3rem;
+      font-weight: 650;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+    code {
+      font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+      font-size: 0.88em;
+      background: #f5f5f4;
+      padding: 0.1em 0.35em;
+      border-radius: 4px;
+    }
+    .examples {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      margin: 0.85rem 0;
+    }
+    .examples a {
+      display: inline-block;
+      padding: 0.55rem 0.85rem;
+      border-radius: 999px;
+      background: var(--heading);
+      color: white;
+      text-decoration: none;
+      font-size: 0.88rem;
+      font-weight: 650;
+    }
+    .examples a:hover { background: var(--accent); }
+    .examples a:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-top: 2rem;
+    }
+    footer a { color: var(--accent); }
+    @media print {
+      body { background: white; }
+      section, header.hero, nav.toc { break-inside: avoid; box-shadow: none; }
+      .examples a { color: var(--heading); background: transparent; border: 1px solid var(--heading); }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <nav class="page-tabs" aria-label="Related pages">
+    <ul>
+      <li><a href="./Architecture-Walkthrough.html" aria-current="page">Walkthrough</a></li>
+      <li><a href="https://theazora.github.io/circleweaver-devteam-planproposal/Circle-Weaver-Rebuild-Plan.html">Rebuild plan</a></li>
+    </ul>
+  </nav>
+
+  <div class="wrap" id="main">
+    <header class="hero">
+      <div class="meta-top">
+        <p class="author">Thea B.</p>
+        <p class="updated">Updated Nov 2, 2026</p>
+      </div>
+      <img class="logo" src="./weaver-logo.png" alt="Weaver" />
+      <h1>Architecture walkthrough</h1>
+      <p class="lede">
+        How the new React interface talks to the Java app on S07, what is already on the branch,
+        and how that work reaches the server.
+      </p>
+    </header>
+
+    <nav class="toc" aria-label="Contents">
+      <strong>Contents</strong>
+      <ol>
+        <li><a href="#open">Where we are</a></li>
+        <li><a href="#picture">Big picture</a></li>
+        <li><a href="#meetings">Opening meetings</a></li>
+        <li><a href="#branch">What is on the branch</a></li>
+        <li><a href="#ship">How it ships</a></li>
+        <li><a href="#both">Both stay on S07</a></li>
+        <li><a href="#questions">Questions I have come across</a></li>
+      </ol>
+    </nav>
+
+    <section id="open">
+      <h2>1. Where we are</h2>
+      <div class="callout">
+        The new interface is React in <code>spring3</code>. The Java app on S07 already does the work.
+        This is how a screen gets data, and how that React app reaches the server.
+      </div>
+      <p>Jeanne and I have been in the repo the most so far. Anyone on the team can open a branch and work in the code for the frontend.</p>
+      <ul class="compact">
+        <li><strong>Jeanne</strong> has been working on React screen components.</li>
+        <li><strong>Thea</strong> is working on backend wiring, login, the meeting API, and the UX hookup.</li>
+        <li><strong>Kyle</strong> covers QA, docs, and presentation support.</li>
+        <li><strong>Dante</strong> covers facilitation, decisions, and repo workflow.</li>
+        <li><strong>Susan</strong> covers branding and the stakeholder expectation pitch.</li>
+      </ul>
+    </section>
+
+    <section id="picture">
+      <h2>2. Big picture</h2>
+      <div class="diagram diagram-compact">
+        <p class="diagram-label">CircleWeaver architecture</p>
+        <pre class="mermaid">
+%%{init: {"flowchart": {"nodeSpacing": 18, "rankSpacing": 22, "padding": 8, "htmlLabels": true}, "themeVariables": {"fontSize": "14px"}}}%%
+flowchart TB
+    Browser[Browser]
+    Legacy["Legacy JSP still on S07"]
+    React["spring3 React + Vite"]
+    Tomcat["Tomcat runs the WAR"]
+    Spring["Spring MVC routes /t/*"]
+    Files["Workspace files in /opt/weaver_sites"]
+    SSOFI["SSOFI on S06, then a session cookie"]
+    Mongo["MongoDB for mail"]
+
+    Browser --> Legacy
+    Browser --> React
+    Legacy --> Tomcat
+    React -->|"JSON"| Tomcat
+    Tomcat --> Spring
+    Spring --> Files
+    Browser -.-> SSOFI
+    SSOFI -.-> Tomcat
+    Spring -.-> Mongo
+        </pre>
+      </div>
+      <div class="callout">
+        The same Tomcat app already serves the legacy JSP pages and will serve the built React app.
+        A <code>/t/</code> URL is a site, then a workspace, then a page or a JSON file.
+        Spring sends that request to a controller, and the controller reads the workspace files.
+        SSOFI checks who you are. MongoDB is for mail.
+      </div>
+      <p>
+        The meeting we are in right now is that legacy page:
+        <a href="https://s07.circleweaver.com/weaver/t/fall2026/development-team/MeetingHtml.htm?id=8562">fall2026 / development-team / meeting 8562</a>.
+      </p>
+      <ul class="compact">
+        <li><img class="tech-logo" src="./react-logo.svg" alt="" /><strong>React</strong> builds the user interface <a class="docs" href="https://react.dev/learn" target="_blank" rel="noopener noreferrer">(Read documentation)</a></li>
+        <li><img class="tech-logo" src="./vite-logo.svg" alt="" /><strong>Vite</strong> runs and builds the frontend <a class="docs" href="https://vite.dev/guide/" target="_blank" rel="noopener noreferrer">(Read documentation)</a></li>
+        <li><img class="tech-logo" src="./java-logo.svg" alt="" /><strong>Java</strong> is the backend programming language <a class="docs" href="https://dev.java/learn/" target="_blank" rel="noopener noreferrer">(Read documentation)</a></li>
+        <li><img class="tech-logo" src="./spring-logo.svg" alt="" /><strong>Spring MVC</strong> receives application requests and routes them to controllers <a class="docs" href="https://docs.spring.io/spring-framework/docs/6.1.x/reference/html/web.html#mvc" target="_blank" rel="noopener noreferrer">(Read documentation)</a></li>
+        <li><img class="tech-logo" src="./maven-logo.svg" alt="" /><strong>Maven</strong> builds the Java application into a WAR <a class="docs" href="https://maven.apache.org/guides/getting-started/maven-in-five-minutes.html" target="_blank" rel="noopener noreferrer">(Read documentation)</a></li>
+        <li><img class="tech-logo" src="./tomcat-logo.svg" alt="" /><strong>Tomcat</strong> runs the deployed Java web application <a class="docs" href="https://tomcat.apache.org/tomcat-11.0-doc/introduction.html" target="_blank" rel="noopener noreferrer">(Read documentation)</a></li>
+        <li><strong>SSOFI</strong> handles user authentication <a class="docs" href="https://github.com/agilepro/ssofi-prolite" target="_blank" rel="noopener noreferrer">(Read documentation)</a></li>
+        <li><img class="tech-logo" src="./mongodb-logo.svg" alt="" /><strong>MongoDB</strong> supports mail-related functionality <a class="docs" href="https://www.mongodb.com/docs/manual/introduction/" target="_blank" rel="noopener noreferrer">(Read documentation)</a></li>
+      </ul>
+      <p>
+        Maven builds the WAR. Tomcat runs it. Spring routes the request.
+        React draws the page and talks to that backend.
+      </p>
+    </section>
+
+    <section id="meetings">
+      <h2>3. Opening meetings</h2>
+      <div class="diagram diagram-steps">
+        <p class="diagram-label">Loading a meeting list</p>
+        <pre class="mermaid">
+%%{init: {"flowchart": {"nodeSpacing": 10, "rankSpacing": 14, "padding": 6, "htmlLabels": true}, "themeVariables": {"fontSize": "13px"}}}%%
+flowchart TB
+    Open["1. Browser opens meetings in spring3"]
+    Ask["2. GET meetingList.json for fall2026 / development-team"]
+    Cookie["3. Browser sends the S07 session cookie"]
+    Tomcat["4. Tomcat passes /t/* into Spring MVC"]
+    Read["5. Meeting controller reads .cog/ProjInfo.xml"]
+    Show["6. JSON returns and React lists the meetings, including 8562"]
+    Open --> Ask --> Cookie --> Tomcat --> Read --> Show
+        </pre>
+      </div>
+      <p class="endpoint"><code>GET /weaver/t/fall2026/development-team/meetingList.json</code></p>
+      <div class="callout">
+        Meetings, the meeting room, and documents already have screens on our branch.
+        They still use demo data. The next milestone is this request, to the endpoint the backend already has.
+        The same workspace path is what the legacy page uses today.
+      </div>
+      <p>
+        This meeting is site <code>fall2026</code>, workspace <code>development-team</code>, id <code>8562</code>.
+        The browser is on <code>MeetingHtml.htm</code>.
+        <code>meetingList.json</code> is the same workspace, as JSON, which is what spring3 should request.
+        <code>test-workspace</code> is the smaller sample list.
+      </p>
+      <p>
+        The page and the meeting record live in different folders.
+        Tomcat serves the page from <code>/opt/tomcat/webapps/weaver/</code>.
+        The record is in the site library: <code>/opt/weaver_sites/fall2026/development-team/.cog/ProjInfo.xml</code>.
+        The sample workspace is the folder next to it, <code>/opt/weaver_sites/fall2026/test-workspace/.cog/ProjInfo.xml</code>.
+        Spring reads <code>ProjInfo.xml</code> and builds <code>meetingList.json</code> and <code>MeetingHtml.htm</code> for that request.
+        Those two names are responses. They are not extra files saved beside <code>ProjInfo.xml</code>.
+      </p>
+      <p>These links need a logged-in session.</p>
+      <div class="examples">
+        <a href="https://s07.circleweaver.com/weaver/t/fall2026/development-team/MeetingHtml.htm?id=8562" target="_blank" rel="noopener noreferrer">This meeting</a>
+        <a href="https://s07.circleweaver.com/weaver/t/fall2026/development-team/meetingList.json" target="_blank" rel="noopener noreferrer">This workspace's meeting list</a>
+        <a href="https://s07.circleweaver.com/weaver/t/fall2026/test-workspace/meetingList.json" target="_blank" rel="noopener noreferrer">Sample meeting list</a>
+        <a href="https://s07.circleweaver.com/weaver/auth/status" target="_blank" rel="noopener noreferrer">Authentication status</a>
+      </div>
+      <p>
+        Login goes through SSOFI. Weaver checks it, and Tomcat sets a session cookie.
+        Later requests to S07 send that cookie. The Vite dev server is a different origin,
+        so that cookie is not sent from localhost. The built app has to be served on the Weaver origin.
+      </p>
+      <p>
+        The URL we are aiming for is
+        <a href="https://s07.circleweaver.com/weaver/app/#/meetings">https://s07.circleweaver.com/weaver/app/#/meetings</a>.
+        Hash routes let React handle its own navigation, so Tomcat does not rewrite frontend paths.
+      </p>
+      <p>
+        The React change is small. <code>spring3</code> already has the meetings screens on demo data,
+        and <code>meetingList.json</code> already returns <code>{ meetings: [...] }</code> from <code>ProjInfo.xml</code>.
+        A branch can save that response for <code>fall2026</code> / <code>development-team</code> and render it in the list,
+        including meeting <code>8562</code>. That is enough to review in a PR.
+        A live <code>fetch</code> is only a few more lines, and it fails on <code>localhost</code> because the session cookie belongs to <code>s07.circleweaver.com</code>.
+        It works once the built app is served on S07 under <code>/weaver/app/</code>.
+      </p>
+    </section>
+
+    <section id="branch">
+      <h2>4. What is on the branch</h2>
+      <p>
+        Branch <code>ux-workflow/create--discussion,document,meetings/functions-thea</code>
+        on <a href="https://github.com/theazora/cognoscenti/tree/ux-workflow/create--discussion%2Cdocument%2Cmeetings/functions-thea">theazora/cognoscenti</a>.
+      </p>
+      <table>
+        <thead>
+          <tr><th>Area</th><th>On this branch</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Meetings</td>
+            <td>Real screens: my meetings, new meeting, meeting list, meeting room, attendance. Still demo data. The live meeting is still <a href="https://s07.circleweaver.com/weaver/t/fall2026/development-team/MeetingHtml.htm?id=8562">MeetingHtml.htm?id=8562</a> on the legacy app.</td>
+          </tr>
+          <tr>
+            <td>Documents</td>
+            <td>Library, upload, and links in <code>DocumentsPage.tsx</code>. Saved in the browser for the demo.</td>
+          </tr>
+          <tr>
+            <td>Discussions</td>
+            <td><code>/discussions</code> is still <code>PlaceholderPage</code>: “Topics and comment threads from this workspace.” Home cards already link there.</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="callout">
+        Thea will open a branch for it and run a PR for review of the prototype workflow.
+        The screen is still a placeholder at the moment.
+      </div>
+    </section>
+
+    <section id="ship">
+      <h2>5. How it ships</h2>
+      <div class="diagram diagram-lg">
+        <p class="diagram-label">From the branch to S07</p>
+        <pre class="mermaid">
+flowchart LR
+    Branch["Feature branch"] --> Master["cognoscenti master"]
+    Master --> Server["Linux server · S07"]
+    WinSCP["WinSCP"] -.->|"look, don't save"| Server
+    Actions["GitHub Actions"] --> Vitest["Vitest"]
+    Actions --> Build["Vite build"]
+    Vitest --> Master
+    Build --> Master
+        </pre>
+      </div>
+      <div class="callout">
+        The React app arrives because it is merged to cognoscenti <code>master</code>, and that is what the server is deployed from.
+        GitHub Actions will run Vitest and the Vite build on the pull request before that merge.
+        A hand upload can be wiped on the next deploy.
+      </div>
+      <p>
+        WinSCP is how we look at S07. Opening a file there opens WinSCP’s editor.
+        The editor can mark the file modified even when you only opened it.
+        If it asks to save, choose No. Looking is fine. Saving from WinSCP is not how this server gets updated.
+      </p>
+      <ul class="compact">
+        <li><strong>App</strong> <code>/opt/tomcat/webapps/weaver/</code> — Tomcat, the JSP pages, and where the React build will go.</li>
+        <li><strong>Sites</strong> <code>/opt/weaver_sites/</code> — each site, then each workspace, then <code>.cog/ProjInfo.xml</code>.</li>
+        <li><strong>Users</strong> <code>/opt/weaver_user/</code> — account files, separate from the meetings.</li>
+      </ul>
+      <p>
+        <code>WEB-INF/config.txt</code> is what points the app at the sites folder and the users folder.
+        It also has the public base URL, <code>https://s07.circleweaver.com/weaver/</code>, and login at <code>https://s06.circleweaver.com/ssofi/</code>.
+        The rest of that file is server admin settings. Those stay on the server.
+      </p>
+      <p>
+        Vitest checks the meeting-list mapper before anyone has to click through S07.
+        That workflow is the plan. It is not in the repo yet.
+      </p>
+    </section>
+
+    <section id="both">
+      <h2>6. Both stay on S07</h2>
+      <p>
+        The legacy JSP pages keep working on the same Tomcat app, <code>/opt/tomcat/webapps/weaver/</code>.
+        <code>spring2</code> is the JSP pages. A <code>spring3</code> folder is already in that app, updated 9/30/2026.
+        The React build we are aiming for is a separate folder, <code>/weaver/app/</code>, and that folder is still to be added.
+        Today’s meeting stays at
+        <a href="https://s07.circleweaver.com/weaver/t/fall2026/development-team/MeetingHtml.htm?id=8562">MeetingHtml.htm?id=8562</a>.
+        The React build goes under <code>/weaver/app/</code>, and hash routes such as
+        <code>/weaver/app/#/meetings</code> stay in the browser, so they don’t replace
+        <code>/weaver/t/...</code> or <code>meetingList.json</code>.
+        Both use the same S07 session cookie.
+      </p>
+      <p>
+        What can feel cluttered is having two ways to open the same meeting.
+        Bookmarks and the current nav still land on the JSP.
+        That’s fine while the React screens are still on demo data.
+        We shouldn’t point people at the React app as the normal way in until a screen is actually calling the existing endpoints.
+      </p>
+    </section>
+
+    <section id="questions">
+      <h2>7. Questions I have come across</h2>
+      <table>
+        <thead>
+          <tr><th>Question</th><th>Answer</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Are we replacing Java?</td><td>The Java backend stays. We are replacing the screens in front of it.</td></tr>
+          <tr><td>Does React talk to MongoDB?</td><td>React talks to the Java backend. MongoDB is the email service the backend uses when we run meetings, for mail such as notices. Meeting records themselves stay in the workspace files.</td></tr>
+          <tr><td>Where are meetings stored?</td><td>In the site library, <code>/opt/weaver_sites/</code>, inside the workspace’s <code>.cog/ProjInfo.xml</code>. This meeting is <code>/opt/weaver_sites/fall2026/development-team/.cog/ProjInfo.xml</code>, id <code>8562</code>. Each meeting is a <code>&lt;meeting&gt;</code> entry in the <code>&lt;meetings&gt;</code> list. <code>meetingList.json</code> is built from that file when the browser asks for it. MongoDB does not hold the meeting. <code>config.txt</code> only points at the library folder. The rest of that file stays on the server.</td></tr>
+          <tr><td>Why SSOFI?</td><td>It is the login service. I (Thea) have set up OAuth across a lot of React and Next.js apps, so this flow is familiar. Vite is basically the same. There are just a few extra layers here, between the dev server, the session cookie, and serving the built app on S07.</td></tr>
+          <tr><td>Why not localhost?</td><td>After login, Tomcat sets a session cookie for <code>s07.circleweaver.com</code>. The Vite dev server is <code>localhost</code> on another origin, so the browser does not send that cookie with requests from the dev server to S07. Logged-in calls such as <code>meetingList.json</code> work once the built app is served on that same host, at <code>/weaver/app/</code>.</td></tr>
+          <tr><td>Do we need a new API?</td><td>We are reusing the endpoints that already exist. We may integrate more APIs later, such as Weaver Scribe. That part is still to be decided.</td></tr>
+          <tr><td>Who builds discussions?</td><td>Thea will open a branch for it and run a PR for review of the prototype workflow. The screen is still a placeholder at the moment.</td></tr>
+        </tbody>
+      </table>
+      <p>These are the ones I have run into so far. Anyone else's questions are welcome.</p>
+    </section>
+
+    <footer>
+      Works offline! · running with <code>mermaid.min.js</code><br />
+      <a href="https://theazora.github.io/circleweaver-devteam-planproposal/Circle-Weaver-Rebuild-Plan.html">Related rebuild plan from Aug 31, 2026</a>
+    </footer>
+  </div>
+</body>
+</html>
