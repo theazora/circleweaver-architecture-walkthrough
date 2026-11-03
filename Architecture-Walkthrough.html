@@ -280,6 +280,30 @@
       margin: 0.85rem 0;
     }
     .callout strong { color: var(--heading); }
+    .callout-highlight {
+      background: #fff4c2;
+      border-left-color: #c2410c;
+    }
+    .callout-highlight p { margin: 0; }
+    .callout-highlight .read-action {
+      margin: 0.75rem 0 0;
+      padding-top: 0.7rem;
+      border-top: 1px solid rgba(194, 65, 12, 0.28);
+      color: #9a3412;
+      font-weight: 650;
+      line-height: 1.45;
+    }
+    .callout-highlight .research-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem 0.85rem;
+      margin: 0.65rem 0 0;
+      font-weight: 650;
+    }
+    .callout-highlight .research-links a {
+      color: #7c2d12;
+      text-underline-offset: 0.14em;
+    }
     ul.compact { margin: 0.4rem 0 0.75rem; padding-left: 1.2rem; }
     ul.compact li { margin-bottom: 0.35rem; }
     .tech-logo {
@@ -553,10 +577,19 @@ flowchart LR
     Build --> Master
         </pre>
       </div>
-      <div class="callout">
-        The React app arrives because it is merged to cognoscenti <code>master</code>, and that is what the server is deployed from.
-        GitHub Actions will run Vitest and the Vite build on the pull request before that merge.
-        A hand upload can be wiped on the next deploy.
+      <div class="callout callout-highlight">
+        <p>
+          The React app arrives because it is merged to cognoscenti <code>master</code>, and that is what the server is deployed from.
+          GitHub Actions will run Vitest and the Vite build on the pull request before that merge.
+          A hand upload can be wiped on the next deploy.
+        </p>
+        <p class="read-action">Let's try to ask Ted if that's what he means by automation, and any other steps that would be good. He mentions Vite's automated checks and GitHub Actions. He says it is less of a tool issue and more a way to develop software we will learn. Some of the tools don't matter as much as wanting small, testable features, so we don't have to test by hand. That is code that tests other code, including lighter Playwright tests. We should research these more before we settle on a setup.</p>
+        <p class="research-links">
+          <a href="https://playwright.dev/docs/intro" target="_blank" rel="noopener noreferrer">Playwright</a>
+          <a href="https://vitest.dev/guide/" target="_blank" rel="noopener noreferrer">Vitest</a>
+          <a href="https://vite.dev/guide/" target="_blank" rel="noopener noreferrer">Vite</a>
+          <a href="https://docs.github.com/en/actions" target="_blank" rel="noopener noreferrer">GitHub Actions</a>
+        </p>
       </div>
       <p>
         WinSCP is how we look at S07. Opening a file there opens WinSCP’s editor.
